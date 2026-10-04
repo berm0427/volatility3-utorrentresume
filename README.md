@@ -67,7 +67,7 @@ must be parsed according to its length and integer delimiters.
 Copy `utorrentresume.py` into the installed Volatility tree:
 
 ```text
-volatility3/plugins/windows/utorrentresume.py
+volatility3/framework/plugins/windows/utorrentresume.py
 ```
 
 Alternatively, point Volatility at this directory. In that layout the plugin
