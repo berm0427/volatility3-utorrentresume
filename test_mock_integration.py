@@ -43,6 +43,19 @@ class FakePhysicalLayer:
 
 
 class UtorrentMockIntegrationTests(unittest.TestCase):
+    @staticmethod
+    def _run_physical_records(records):
+        fake_generator = types.SimpleNamespace(
+            config={
+                "max_results": 20,
+                "physical_fallback": True,
+                "scan_physical": False,
+            },
+            _selected_processes=lambda: [],
+            _scan_physical=lambda: iter(records),
+        )
+        return list(MODULE.UtorrentResume._generator(fake_generator))
+
     def test_physical_fallback_emits_recovered_record(self):
         record = bdict(
             [
@@ -90,6 +103,92 @@ class UtorrentMockIntegrationTests(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0][1][0], "PhysicalMemory")
         self.assertEqual(rows[0][1][1], -1)
+
+    def test_correlates_two_torrents_by_unique_piece_vector_lengths(self):
+        hash_a = bytes(range(20))
+        hash_b = bytes(range(20, 40))
+        records = [
+            (
+                0x1000,
+                MODULE.TorrentRecord(
+                    0x1000,
+                    b"",
+                    {b"caption": b"alpha.iso", b"have": b"\x01" * 16},
+                    recovery_mode="Fragment",
+                ),
+            ),
+            (
+                0x2000,
+                MODULE.TorrentRecord(
+                    0x2000,
+                    b"",
+                    {b"caption": b"beta.iso", b"have": b"\x02" * 24},
+                    recovery_mode="Fragment",
+                ),
+            ),
+            (
+                0x3000,
+                MODULE.TorrentRecord(
+                    0x3000,
+                    b"",
+                    {b"info": hash_a, b"known": b"\x11" * 16},
+                    recovery_mode="Fragment",
+                ),
+            ),
+            (
+                0x4000,
+                MODULE.TorrentRecord(
+                    0x4000,
+                    b"",
+                    {b"info": hash_b, b"known": b"\x22" * 24},
+                    recovery_mode="Fragment",
+                ),
+            ),
+        ]
+        rows = self._run_physical_records(records)
+        self.assertEqual(len(rows), 2)
+        recovered_hashes = {row[1][8] for row in rows}
+        self.assertEqual(recovered_hashes, {hash_a.hex(), hash_b.hex()})
+
+    def test_leaves_same_sized_multi_torrent_hash_fragment_unassigned(self):
+        orphan_hash = bytes(range(20))
+        records = [
+            (
+                0x1000,
+                MODULE.TorrentRecord(
+                    0x1000,
+                    b"",
+                    {b"caption": b"alpha.iso", b"have": b"\x01" * 16},
+                    recovery_mode="Fragment",
+                ),
+            ),
+            (
+                0x2000,
+                MODULE.TorrentRecord(
+                    0x2000,
+                    b"",
+                    {b"caption": b"beta.iso", b"have": b"\x02" * 16},
+                    recovery_mode="Fragment",
+                ),
+            ),
+            (
+                0x3000,
+                MODULE.TorrentRecord(
+                    0x3000,
+                    b"",
+                    {b"info": orphan_hash, b"known": b"\x11" * 16},
+                    recovery_mode="Fragment",
+                ),
+            ),
+        ]
+        rows = self._run_physical_records(records)
+        self.assertEqual(len(rows), 3)
+        named_rows = [row for row in rows if row[1][6]]
+        orphan_rows = [row for row in rows if not row[1][6]]
+        self.assertEqual(len(named_rows), 2)
+        self.assertTrue(all(not row[1][8] for row in named_rows))
+        self.assertEqual(len(orphan_rows), 1)
+        self.assertEqual(orphan_rows[0][1][8], orphan_hash.hex())
 
 
 if __name__ == "__main__":

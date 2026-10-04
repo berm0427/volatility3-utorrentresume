@@ -1,5 +1,8 @@
 # Volatility 3 uTorrent resume.dat carver
 
+[![Tests](https://github.com/berm0427/volatility3-utorrentresume/actions/workflows/tests.yml/badge.svg)](https://github.com/berm0427/volatility3-utorrentresume/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 ## 한국어 소개
 
 Windows 메모리 덤프에서 uTorrent/BitTorrent의 bencode 기반 `resume.dat`
@@ -173,4 +176,6 @@ python test_mock_integration.py
 
 This synthetic test places a complete resume record in a fake physical layer,
 verifies carving, and checks that the generator emits `PhysicalMemory` with PID
-`-1` when no process is available.
+`-1` when no process is available. Additional multi-torrent tests verify that
+orphan info-hash fragments are joined only when the piece-vector length maps to
+one torrent, and remain separate when same-sized candidates are ambiguous.

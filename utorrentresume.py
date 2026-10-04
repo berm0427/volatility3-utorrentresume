@@ -1,7 +1,7 @@
 """Volatility 3 plugin for carving uTorrent resume.dat records from memory.
 
-Copy this file to ``volatility3/plugins/windows/utorrentresume.py`` or load its
-parent directory with Volatility's ``--plugin-dirs``/``-p`` option.
+Copy this file to ``volatility3/framework/plugins/windows/utorrentresume.py``
+or load its parent directory with Volatility's ``--plugin-dirs``/``-p`` option.
 """
 
 import datetime
