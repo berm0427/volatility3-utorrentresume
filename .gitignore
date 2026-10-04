@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.raw
+*.dmp
+*.mem
+*.vmem
+*.csv
+*.log
+.venv/
+venv/
